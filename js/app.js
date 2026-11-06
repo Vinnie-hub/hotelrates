@@ -1,7 +1,9 @@
 (function () {
   "use strict";
   /* HotelRate reviewer dashboard. Frontend-only: everything lives in LocalStorage. */
-  const KEY = "hotelrate.dashboard.v1", TZ = "Africa/Nairobi", LIMIT = 5;
+  const KEY = "hotelrate.dashboard.v1", TZ = "Africa/Nairobi", LIMIT = 5, WD_MS = 120000;
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const fmtCd = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
   const $ = (s) => document.querySelector(s);
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   const r2 = (n) => Math.round(n * 100) / 100;
@@ -27,6 +29,10 @@
     const d = defaults();
     s = Object.assign(d, s && typeof s === "object" ? s : {});
     s.profile = Object.assign(defaults().profile, s.profile);
+    s.tx.forEach((t) => { /* normalise statuses from earlier versions */
+      if (t.type === "reward" && t.status === "Completed") t.status = "Credited";
+      if (t.type === "withdrawal") { if (t.status === "Completed") t.status = "Paid"; if (!t.due) t.due = new Date(t.date).getTime() + WD_MS; }
+    });
     H.forEach((h) => { /* simulated stats: created once, then kept */
       const o = s.hotels[h.name];
       if (!o || !o.reviews) s.hotels[h.name] = { reviews: rand(100, 10000), rating: Math.round((3.6 + Math.random() * 1.3) * 10) / 10 };
@@ -42,7 +48,7 @@
     S.tx.forEach((t) => {
       if (t.type === "reward") earned += t.amount;
       else if (t.status === "Pending") pending += t.amount;
-      else if (t.status === "Completed") withdrawn += t.amount;
+      else if (t.status === "Paid") withdrawn += t.amount;
     });
     return { earned: r2(earned), pending: r2(pending), withdrawn: r2(withdrawn), avail: r2(earned - pending - withdrawn) };
   }
@@ -99,7 +105,7 @@
       ${statCard("Available balance", kes(w.avail), "Ready to withdraw", "hero")}
       ${statCard("Total earnings", kes(w.earned), "All review rewards")}
       ${statCard("Pending earnings", kes(w.pending), "Withdrawals awaiting processing")}
-      ${statCard("Total withdrawn", kes(w.withdrawn), "Completed withdrawals")}
+      ${statCard("Total withdrawn", kes(w.withdrawn), "Paid out to M-Pesa")}
     </div>
     <div class="grid g2" style="margin-top:16px">
       <div class="card"><header><h3>Today's review progress</h3><span class="pill">${n}/${LIMIT}</span></header>
@@ -190,14 +196,28 @@
     if (!$("#rc").checked) errs.push("Confirm that the review is your own and honest.");
     $("#rerr").innerHTML = errs.map((e) => "• " + esc(e)).join("<br>");
     if (errs.length) return toast(errs[0], "bad");
-    const amount = hotelKes(h), now = new Date().toISOString();
+    return processReview(h);
+  }
+  let busy = false;
+  async function processReview(h) {
+    if (busy) return; busy = true;
+    const d = $("#dlg"), amount = hotelKes(h), now = new Date().toISOString(), btn = $("#rf button[type=submit]");
+    if (btn) btn.disabled = true;
+    d.onclick = null; d.oncancel = (ev) => ev.preventDefault();
+    d.innerHTML = `<div class="proc" role="status"><div class="spin" aria-hidden="true"></div><h3>Verifying your review…</h3><p id="pmsg">Please wait while we check your submission.</p><div class="bar"><i></i></div></div>`;
+    d.showModal();
+    await sleep(1100); $("#pmsg").textContent = "Checking your ratings and comments…";
+    await sleep(1100); $("#pmsg").textContent = "Finalising your submission…";
+    await sleep(900);
     const rv = { id: ref("RV"), hotel: h.name, city: h.city, ratings: { ...D.ratings }, title: D.title.trim(), text: D.text.trim(), date: now, usd: h.pay, rate: S.rate, kes: amount };
     S.reviews.unshift(rv);
-    S.tx.unshift({ id: ref("T"), ref: ref("HR"), type: "reward", desc: "Review reward: " + h.name, amount, usd: h.pay, rate: S.rate, date: now, status: "Completed" });
+    S.tx.unshift({ id: ref("T"), ref: ref("HR"), type: "reward", desc: "Review reward: " + h.name, amount, usd: h.pay, rate: S.rate, date: now, status: "Credited" });
     S.daily = { day: today(), count: daily() + 1 };
     delete S.drafts[h.name]; D = null; save();
-    toast(`Review submitted. ${kes(amount)} added to your wallet.`, "ok");
-    location.hash = "#reviews";
+    d.innerHTML = `<div class="proc ok" role="status"><div class="tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg></div><h3>Verified and submitted</h3><p><b class="pos">+${kes(amount)}</b> has been added to your wallet.</p></div>`;
+    await sleep(1800);
+    d.oncancel = null; d.close(); busy = false;
+    location.hash = "#reviews"; render();
   }
 
   function vReviews() {
@@ -220,7 +240,7 @@
       <div class="f"><label for="wp">M-Pesa phone number</label><input id="wp" inputmode="tel" placeholder="0712 345 678" value="${esc(S.profile.phone)}" autocomplete="tel"></div>
       <div class="f"><label for="wa">Amount (KES)</label><input id="wa" type="number" inputmode="decimal" min="${S.minWd}" step="1" placeholder="${S.minWd}"><p class="hint"><button type="button" class="btn sec sm" data-a="max">Withdraw all</button></p></div>
       <div id="werr" class="err" role="alert"></div><button class="btn block" type="submit">Review request</button></form>
-    <div class="card"><header><h3>Your requests</h3></header>${wd.length ? `<div class="list">${wd.map((t) => `<div class="li"><div><b class="neg">−${kes(t.amount)}</b><small>${fmtDate(t.date)} · ${esc(t.ref)}<br>To ${esc(maskPhone(t.phone))}</small></div><div style="text-align:right"><span class="st ${t.status}">${t.status}</span>${t.status === "Pending" ? `<br><button class="btn sec sm" style="margin-top:6px" data-a="cancel" data-id="${t.id}">Cancel</button> <button class="btn sec sm" style="margin-top:6px" data-a="sim" data-id="${t.id}">Mark as paid</button>` : ""}</div></div>`).join("")}</div>` : `<div class="empty"><b>No withdrawal requests</b>Your requests will show here as Pending.</div>`}</div></div>`;
+    <div class="card"><header><h3>Your requests</h3></header>${wd.length ? `<div class="list">${wd.map((t) => `<div class="li"><div><b class="neg">−${kes(t.amount)}</b><small>${fmtDate(t.date)} · ${esc(t.ref)}<br>To ${esc(maskPhone(t.phone))}${t.status === "Pending" ? `<br><span class="eta" data-due="${t.due}">Processing · ${fmtCd(t.due - Date.now())} left</span>` : t.status === "Paid" ? `<br>Paid ${fmtDate(t.paidDate || t.date)}` : ""}</small></div><div style="text-align:right"><span class="st ${t.status}">${t.status}</span>${t.status === "Pending" ? `<br><button class="btn sec sm" style="margin-top:6px" data-a="cancel" data-id="${t.id}">Cancel</button>` : ""}</div></div>`).join("")}</div>` : `<div class="empty"><b>No withdrawal requests</b>Your requests will appear here </div>`}</div></div>`;
   }
 
   const T = { q: "", type: "all", st: "all" };
@@ -231,7 +251,7 @@
   }
   function vTransactions() {
     const o = (v, t, c) => `<option value="${v}" ${v === c ? "selected" : ""}>${t}</option>`;
-    return `<div class="toolbar"><input id="tq" type="search" placeholder="Search by hotel or reference" aria-label="Search transactions" value="${esc(T.q)}"><select id="tt" aria-label="Type">${o("all", "All types", T.type)}${o("reward", "Rewards", T.type)}${o("withdrawal", "Withdrawals", T.type)}</select><select id="ts" aria-label="Status">${o("all", "All statuses", T.st)}${o("Completed", "Completed", T.st)}${o("Pending", "Pending", T.st)}${o("Cancelled", "Cancelled", T.st)}</select></div><div class="card" id="tl">${txList()}</div>`;
+    return `<div class="toolbar"><input id="tq" type="search" placeholder="Search by hotel or reference" aria-label="Search transactions" value="${esc(T.q)}"><select id="tt" aria-label="Type">${o("all", "All types", T.type)}${o("reward", "Rewards", T.type)}${o("withdrawal", "Withdrawals", T.type)}</select><select id="ts" aria-label="Status">${o("all", "All statuses", T.st)}${o("Credited", "Credited", T.st)}${o("Paid", "Paid", T.st)}${o("Pending", "Pending", T.st)}${o("Cancelled", "Cancelled", T.st)}</select></div><div class="card" id="tl">${txList()}</div>`;
   }
 
   function vSettings() {
@@ -297,12 +317,11 @@
     } else if (a === "more") { const p = b.previousElementSibling, open = p.classList.toggle("clamp") === false; b.textContent = open ? "Read less" : "Read more"; b.setAttribute("aria-expanded", String(open)); }
     else if (a === "draft") saveDraft();
     else if (a === "max") { $("#wa").value = Math.floor(wallet().avail); }
-    else if (a === "cancel" || a === "sim") {
+    else if (a === "cancel") {
       const t = S.tx.find((x) => x.id === b.dataset.id); if (!t || t.status !== "Pending") return;
-      const cancel = a === "cancel";
-      if (!(await confirmDlg({ title: cancel ? "Cancel this request?" : "Mark as paid?", body: cancel ? `${kes(t.amount)} will return to your available balance.` : "The request will be shown as Completed and counted under Total withdrawn.", ok: cancel ? "Cancel request" : "Mark as paid", danger: cancel }))) return;
-      t.status = cancel ? "Cancelled" : "Completed"; save(); render();
-      toast(cancel ? "Request cancelled and balance restored." : "Request marked as completed.", "ok");
+      if (!(await confirmDlg({ title: "Cancel this request?", body: `${kes(t.amount)} will return to your available balance.`, ok: "Cancel request", danger: true }))) return;
+      t.status = "Cancelled"; save(); render();
+      toast("Request cancelled and balance restored.", "ok");
     } else if (a === "reset") {
       if (!(await confirmDlg({ title: "Reset all your data?", body: "This permanently clears your profile, reviews, drafts, wallet, transactions and daily progress in this browser.", ok: "Reset everything", danger: true }))) return;
       try { localStorage.removeItem(KEY); } catch (er) { /* ignore */ }
@@ -322,10 +341,10 @@
       else if (amt > w.avail) errs.push(`You can withdraw up to ${kes(w.avail)}.`);
       $("#werr").innerHTML = errs.map((x) => "• " + esc(x)).join("<br>");
       if (errs.length) return toast(errs[0], "bad");
-      if (!(await confirmDlg({ title: "Confirm withdrawal request", body: `Request <b>${kes(amt)}</b> to M-Pesa <b>${esc(maskPhone(phone))}</b>? The amount leaves your balance now and the request is saved as Pending. `, ok: "Confirm request" }))) return;
+      if (!(await confirmDlg({ title: "Confirm withdrawal request", body: `Request <b>${kes(amt)}</b> to M-Pesa <b>${esc(maskPhone(phone))}</b>? The amount leaves your balance now and the request is paid to your M-Pesa. `, ok: "Confirm request" }))) return;
       const r = ref("MP");
-      S.tx.unshift({ id: ref("T"), ref: r, type: "withdrawal", desc: "M-Pesa withdrawal request", amount: amt, phone, date: new Date().toISOString(), status: "Pending" });
-      save(); render(); toast(`Request ${r} saved as Pending.`, "ok");
+      S.tx.unshift({ id: ref("T"), ref: r, type: "withdrawal", desc: "M-Pesa withdrawal", amount: amt, phone, date: new Date().toISOString(), due: Date.now() + WD_MS, status: "Pending" });
+      save(); render(); toast(`Request ${r} received. Payment is being processed.`, "ok");
     } else if (id === "pf") {
       const email = $("#pe").value.trim(), ph = $("#pp").value.trim(), rate = parseFloat($("#pr").value), min = parseFloat($("#pm").value), errs = [];
       if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) errs.push("Enter a valid email address.");
@@ -341,11 +360,29 @@
 
   /* ---------- Midnight (Nairobi) reset ---------- */
   const tick = () => { if (S.daily.day !== today()) { daily(); render(); toast("A new day has started. Your daily reviews have reset.", "ok"); } };
+  let dirty = false;
+  function settle() {
+    const now = Date.now();
+    S.tx.forEach((t) => {
+      if (t.type === "withdrawal" && t.status === "Pending" && now >= t.due) {
+        t.status = "Paid"; t.paidDate = new Date().toISOString(); dirty = true; save();
+        toast(`${kes(t.amount)} paid to M-Pesa ${maskPhone(t.phone)}.`, "ok");
+      }
+    });
+    if (dirty) {
+      const a = document.activeElement;
+      if ($("#rf")) dirty = false;
+      else if (!(a && a.matches && a.matches("#view input, #view textarea"))) { dirty = false; render(); }
+    }
+    document.querySelectorAll(".eta").forEach((e) => { e.textContent = "Processing · " + fmtCd(+e.dataset.due - now) + " left"; });
+  }
+  setInterval(settle, 1000);
   setInterval(tick, 15000);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) tick(); });
   window.addEventListener("storage", (e) => { if (e.key === KEY) { S = load(); render(); } });
 
 
+  settle();
   save();
   render();
 })();
