@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HotelRate Dashboard | Review hotels, track KES rewards</title>
+<meta name="description" content="HotelRate reviewer dashboard: browse hotels, write reviews, track your KES rewards and request M-Pesa withdrawals.">
+<meta name="theme-color" content="#14213d">
+<link rel="icon" type="image/webp" href="assets/favicon-192.webp">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<header class="brandbar">
+  <a class="logo-l" href="#overview" aria-label="HotelRate dashboard home"><img src="assets/hotel%20review%20logo.webp" alt="HotelRate" width="120" height="40"></a>
+  <img class="logo-r" src="assets/mulaearn%20logo.png" alt="Mulaearn" width="120" height="40">
+</header>
+<div class="app">
+  <aside class="side" id="side" aria-label="Main navigation">
+    <nav id="nav"></nav>
+    <div class="side-foot">
+    </div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <div class="main">
+    <header class="top">
+      <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Open menu" aria-controls="side"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+      <h1 id="pageTitle">Overview</h1>
+      <a class="pill daily" id="dailyPill" href="#hotels" title="Reviews completed today"></a>
+    </header>
+    <main id="view" tabindex="-1"></main>
+    <footer class="foot"><p>Copyright © 2026 HotelRate. All rights reserved.</p></footer>
+  </div>
+  <nav class="bnav" id="bnav" aria-label="Quick navigation"></nav>
+</div>
+<dialog id="dlg"></dialog>
+<div id="toasts" role="status" aria-live="polite"></div>
+<script src="js/data.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

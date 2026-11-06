@@ -1,0 +1,25 @@
+{
+  "name": "HotelRate \u2013 Hotel Reviews",
+  "short_name": "HotelRate",
+  "description": "Review hotels, track your KES rewards and request M-Pesa withdrawals.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#14213d",
+  "icons": [
+    {
+      "src": "assets/favicon-192.webp",
+      "sizes": "192x192",
+      "type": "image/webp",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
