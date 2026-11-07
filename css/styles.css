@@ -74,7 +74,7 @@ ul.tips{margin:0;padding-left:18px;font-size:.88rem;color:var(--mute);display:gr
 .scroll{overflow-x:auto}
 .abar{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
 .st{font-size:.76rem;font-weight:700;border-radius:999px;padding:3px 10px}
-.st.Credited,.st.Paid{background:var(--okb);color:var(--ok)}.st.Pending{background:var(--warnb);color:var(--warn)}.st.Cancelled{background:var(--badb);color:var(--bad)}
+.st.Credited,.st.Paid,.st.Verified{background:var(--okb);color:var(--ok)}.st.Pending,.st.Verifying{background:var(--warnb);color:var(--warn)}.st.Cancelled,.st.Rejected{background:var(--badb);color:var(--bad)}
 .pos{color:var(--ok);font-weight:700}.neg{color:var(--neg);font-weight:700}
 .list{display:grid;gap:0}.li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}.li:last-child{border-bottom:0}
 .li small{color:var(--mute);display:block}
@@ -130,3 +130,7 @@ dialog::backdrop{background:rgba(20,33,61,.5)}dialog h3{font-size:1.15rem;margin
 dialog:has(.proc){width:min(380px,92vw)}
 @keyframes sp{to{transform:rotate(360deg)}}@keyframes fill{to{width:100%}}@keyframes pop{from{transform:scale(.5);opacity:0}}
 @media(max-width:560px){dialog:has(.proc){width:100%}}
+
+.vwrap{margin:10px 0 2px}.vwrap small{color:var(--mute);display:block}
+.vp{height:6px;border-radius:99px;background:var(--acc-l);overflow:hidden;margin:6px 0}.vp i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width 1s linear}
+.warnc{color:var(--warn);font-weight:600}.okc{color:var(--ok);font-weight:600}
