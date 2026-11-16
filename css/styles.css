@@ -134,3 +134,24 @@ dialog:has(.proc){width:min(380px,92vw)}
 .vwrap{margin:10px 0 2px}.vwrap small{color:var(--mute);display:block}
 .vp{height:6px;border-radius:99px;background:var(--acc-l);overflow:hidden;margin:6px 0}.vp i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width 1s linear}
 .warnc{color:var(--warn);font-weight:600}.okc{color:var(--ok);font-weight:600}
+
+.pill.cur{background:#fff;border:1px solid var(--line);color:var(--ink)}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.copt{display:grid;gap:2px;text-align:left;padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer;font:inherit;color:var(--text)}
+.copt:hover,.copt:focus-visible{border-color:var(--acc);background:var(--acc-l)}.copt .fl{font-size:1.6rem;line-height:1.2}.copt small{color:var(--mute);font-variant-numeric:tabular-nums}
+.abar2{display:flex;gap:10px;flex-wrap:wrap}
+@media(max-width:560px){.pill.cur{padding:6px 10px}}
+
+@media(max-width:560px){.tdy{display:none}.top h1{font-size:1.05rem}.top{gap:8px}}
+
+/* Earnings & Wallet */
+.wal-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;padding:24px;background:linear-gradient(135deg,var(--ink) 0%,#2a2f7a 100%);border-color:var(--ink);color:#fff}
+.wh-main{flex:1 1 320px;min-width:0}.wh-main>small{color:#b9c0d6;font-weight:600;font-size:.84rem}
+.wh-main>b{display:block;font-size:2.3rem;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums lining-nums;line-height:1.15;margin:2px 0;word-break:break-word}
+.wh-usd{display:block;color:#b9c0d6;font-size:.86rem;font-variant-numeric:tabular-nums}
+.wh-prog{margin-top:16px;max-width:460px}.wh-prog small{color:#b9c0d6;font-size:.8rem}
+.wal-hero .vp{background:rgba(255,255,255,.18)}.wal-hero .vp i{background:var(--org)}
+.wh-act{display:flex;gap:10px;flex-wrap:wrap}.wal-hero .btn{background:var(--org);color:#fff}.wal-hero .btn:hover{background:#e86d00}
+.wal-hero .btn.sec{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.3);color:#fff}.wal-hero .btn.sec:hover{background:rgba(255,255,255,.2)}
+.g3s{grid-template-columns:repeat(3,1fr)}
+@media(max-width:700px){.g3s{grid-template-columns:1fr 1fr;gap:10px}.g3s>:first-child{grid-column:1/-1}.wal-hero{padding:18px}.wh-main>b{font-size:1.8rem}.wh-act{width:100%}.wh-act .btn{flex:1}}

@@ -1,7 +1,7 @@
 {
   "name": "HotelRate \u2013 Hotel Reviews",
   "short_name": "HotelRate",
-  "description": "Review hotels, track your KES rewards and request M-Pesa withdrawals.",
+  "description": "Review hotels, track your rewards in your local currency and request mobile-money withdrawals.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
