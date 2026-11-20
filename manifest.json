@@ -7,7 +7,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#14213d",
+  "theme_color": "#0f2a4a",
   "icons": [
     {
       "src": "assets/favicon-192.webp",
